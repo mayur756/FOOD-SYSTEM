@@ -25,7 +25,6 @@ const adminauth = (req, res, next) => {
                 message: "Admin access denied"
             });
         }
-
         next();
     } catch (error) {
         return res.status(401).json({

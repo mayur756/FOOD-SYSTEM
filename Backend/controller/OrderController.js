@@ -5,11 +5,13 @@ import OrderModel from "../models/orderModel.js";
 ========================= */
 const placeOrder = async (req, res) => {
   try {
-    const { items, address, amount, paymentMethod } = req.body;
+    const { items, address, amount, paymentMethod, paymentStatus } = req.body;
 
-    // Validate items
     if (!items || !Array.isArray(items) || items.length === 0) {
-      return res.status(400).json({ success: false, message: "Items are required" });
+      return res.status(400).json({
+        success: false,
+        message: "Items are required"
+      });
     }
 
     const order = new OrderModel({
@@ -18,18 +20,16 @@ const placeOrder = async (req, res) => {
       address,
       amount,
       paymentMethod,
-      paymentStatus: paymentMethod === "online" ? "Paid" : "Pending",
+      paymentStatus: paymentMethod === "online" ? "Paid" : "Pending"
     });
 
     await order.save();
-
-    // Populate product info before sending response
     await order.populate("items.productId", "name price image");
 
     res.status(201).json({
       success: true,
       message: "Order placed successfully",
-      order,
+      order
     });
   } catch (error) {
     console.error(error);
@@ -53,15 +53,18 @@ const placeOrderStripe = async (req, res) => {
       items,
       address,
       amount,
-      paymentMethod: "stripe",
-      paymentStatus: "Pending",
+      paymentMethod,
+      paymentStatus: paymentMethod === "online" ? "Paid" : "Pending",
     });
-
     await order.save();
-   await order.populate("items.productId", "name price image");
-
-    res.status(201).json({ success: true, order });
-  } catch (error) {
+    await order.populate("items.productId", "name price image");
+    res.status(201).json({
+      success: true,
+      message: "Order placed successfully",
+      order,
+    });
+  }
+  catch (error) {
     console.error(error);
     res.status(500).json({ success: false, message: error.message });
   }
@@ -92,7 +95,7 @@ const verifyStripe = async (req, res) => {
 /* =========================
    GET ALL ORDERS (ADMIN)
 ========================= */
-const allOrders = async (req, res) => {
+ const allOrders = async (req, res) => {
   try {
     const orders = await OrderModel.find()
       .populate("userId", "name email")
@@ -112,8 +115,8 @@ const allOrders = async (req, res) => {
 const userOrders = async (req, res) => {
   try {
     const orders = await OrderModel.find({ userId: req.user.id })
-  .populate("items.productId", "name price image")
-  .sort({ createdAt: -1 });
+      .populate("items.productId", "name price image")
+      .sort({ createdAt: -1 });
     res.json({ success: true, orders });
   } catch (error) {
     console.error(error);
